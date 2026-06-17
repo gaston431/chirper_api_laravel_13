@@ -1,0 +1,1 @@
+UPDATE "database"."posts" SET "user_id"=null WHERE  "id"=3;
