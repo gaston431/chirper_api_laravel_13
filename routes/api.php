@@ -1,8 +1,10 @@
 <?php
 
 use App\Http\Controllers\PostController;
+use App\Http\Controllers\WeatherController;
 use App\Http\Resources\UserResource;
 use App\Models\User;
+use GuzzleHttp\Client;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Route;
@@ -59,3 +61,41 @@ Route::get('/users', function () {
     return User::with('posts')->paginate(10)->toResourceCollection();
     // return UserResource::collection(User::all());
 });
+
+Route::get('/getWeather', function (Request $request) {
+
+    $latitude = $request->input('latitude');
+    $longitude = $request->input('longitude');
+    // var_dump($latitude,$longitude);die;
+    // $apiKey = '7246de415ccc5d4ff9c4fbb2852575d6';
+    // $apiEndpoint = 'https://api.openweathermap.org/data/2.5/weather';
+    $apiEndpoint = 'https://api.open-meteo.com/v1/forecast';
+    $client = new Client();
+
+    $response = $client->get($apiEndpoint, [
+        'query' => [
+            'latitude' => $latitude,
+            'longitude' => $longitude,
+            // 'temperature_unit' => 'fahrenheit',
+            'current' => 'temperature_2m,wind_speed_10m,relative_humidity_2m,precipitation_probability'
+        ]
+    ]);
+
+    $data = json_decode($response->getBody()->getContents(), true);
+
+    return [
+        "temperature_2m" => $data['current']['temperature_2m'],
+        "wind_speed_10m" => $data['current']['wind_speed_10m'],
+        "relative_humidity_2m" => $data['current']['relative_humidity_2m'],
+        "precipitation_probability" => $data['current']['precipitation_probability'],
+    ];
+    return [
+        'city' => $data['name'],
+        'temperature' => $data['main']['temp'],
+        'description' => $data['weather'][0]['description'],
+        'humidity' => $data['main']['humidity']
+    ];
+});
+
+Route::get('getWeather', [WeatherController::class, 'getWeather']);
+Route::get('getWeatherCurl', [WeatherController::class, 'getWeatherCurl']);
